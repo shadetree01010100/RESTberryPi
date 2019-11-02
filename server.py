@@ -254,9 +254,6 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
                 continue
         return channels
 
-    def _read_gpio(self, channel):
-        return GPIO.input(channel) == GPIO.HIGH
-
     def _send_response(self, status, message):
         self.send_response(status)
         self.send_header('Content-type', 'application/json')
