@@ -10,6 +10,7 @@ import http.server
 import json
 import logging
 import sys
+
 import RPi.GPIO as GPIO
 
 
@@ -335,8 +336,20 @@ if __name__ == '__main__':
         IORequestHandler.token = get_token(USERPASS)
 
     # setup logging
-    logging.basicConfig(level=logging.DEBUG)
+    formatter = logging.Formatter(
+        fmt='%(asctime)s %(levelname)-8s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+    # log to file
+    handler = logging.FileHandler('server.log', mode='a+')
+    handler.setFormatter(formatter)
+    # log to stdout, for example when running in a terminal
+    screen_handler = logging.StreamHandler(stream=sys.stdout)
+    screen_handler.setFormatter(formatter)
+    # create logger and add handlers
     logger = logging.getLogger('RESTberryPi')
+    logger.setLevel(logging.INFO)
+    logger.addHandler(handler)
+    logger.addHandler(screen_handler)
     IORequestHandler.logger = logger
 
     # create and run server
