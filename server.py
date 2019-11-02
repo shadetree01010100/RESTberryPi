@@ -337,20 +337,19 @@ if __name__ == '__main__':
         IORequestHandler.token = get_token(USERPASS)
 
     # setup logging
+    logger = logging.getLogger('RESTberryPi')
+    logger.setLevel(logging.INFO)
     formatter = logging.Formatter(
         fmt='%(asctime)s %(levelname)-8s %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
     # log to file
     file_handler = logging.FileHandler('server.log', mode='a+')
     file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
     # log to stdout, for example when running in a terminal
     screen_handler = logging.StreamHandler(stream=sys.stdout)
     screen_handler.setFormatter(formatter)
-    # create logger and add handlers
-    logger = logging.getLogger('RESTberryPi')
-    logger.addHandler(file_handler)
     logger.addHandler(screen_handler)
-    logger.setLevel(logging.INFO)
 
     # create and run server
     httpd = http.server.HTTPServer(
