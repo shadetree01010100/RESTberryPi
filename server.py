@@ -125,7 +125,7 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
             self.logger.debug(msg)
         elif status == 500:
             msg = '500 Exception while handling {}'.format(endpoint)
-            self.logger.error(msg)
+            self.logger.warning(msg)
         else:
             msg = '{} {}'.format(status, endpoint)
             self.logger.warning(msg)
