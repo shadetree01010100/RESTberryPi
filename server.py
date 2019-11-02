@@ -8,6 +8,7 @@ VERSION = '0.1.0'
 import base64
 import http.server
 import json
+import logging
 import sys
 import RPi.GPIO as GPIO
 
@@ -44,7 +45,8 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
             # top-level request
             try:
                 self._send_response(200, self._get_status())
-            except:
+            except Exception as e:
+                self.logger.error(e.args[0])
                 self._send_response(500, 'ERROR GETTING GPIO STATUS')
             return
         # else, call `RESOURCE` and pass it `command`
@@ -62,7 +64,8 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
             try:
                 states = self._read_all_gpio(GPIO.IN)
                 return 200, states
-            except:
+            except Exception as e:
+                self.logger.error(e.args[0])
                 return 500, 'ERROR READING ALL INPUTS'
         # else, read a specific channel
         try:
@@ -74,7 +77,8 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
                 try:
                     states = self._read_all_gpio(GPIO.IN)
                     return 200, states
-                except:
+                except Exception as e:
+                    self.logger.error(e.args[0])
                     return 500, 'ERROR READING ALL INPUTS'
             # else, the value is not a number
             return 400, 'INVALID GPIO {}'.format(command[0])
@@ -88,13 +92,15 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
                     # TO DO: pull up/down resistor settings
                     GPIO.setup(channel, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
                     return 200, 'OK'
-                except:
+                except Exception as e:
+                    self.logger.error(e.args[0])
                     return 500, 'ERROR CONFIGURING INPUT {}'.format(channel)
             if method.lower() == 'disable':
                 try:
                     GPIO.cleanup(channel)
                     return 200, 'OK'
-                except:
+                except Exception as e:
+                    self.logger.error(e.args[0])
                     return 500, 'ERROR DISABLING INPUT {}'.format(channel)
             if method:
                 # unrecognized method
@@ -106,9 +112,22 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
         try:
             state = bool(GPIO.input(channel))
             return 200, state
-        except:
+        except Exception as e:
+            self.logger.error(e.args[0])
             return 500, 'ERROR READING INPUT {}'.format(channel)
 
+    def log_message(self, _, *args):
+        endpoint = args[0].split(' ')[1]
+        status = int(args[1])
+        if status == 200:
+            msg = '200 {}'.format(endpoint)
+            self.logger.debug(msg)
+        elif status == 500:
+            msg = '500 Exception while handling {}'.format(endpoint)
+            self.logger.error(msg)
+        else:
+            msg = '{} {}'.format(status, endpoint)
+            self.logger.warning(msg)
 
     def OUTPUTS(self, command):
         """ Called when handling the /outputs resource."""
@@ -117,7 +136,8 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
             try:
                 states = self._read_all_gpio(GPIO.OUT)
                 return 200, states
-            except:
+            except Exception as e:
+                self.logger.error(e.args[0])
                 return 500, 'ERROR READING ALL OUTPUTS'
         # else, read a specific channel
         try:
@@ -129,7 +149,8 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
                 try:
                     states = self._read_all_gpio(GPIO.OUT)
                     return 200, states
-                except:
+                except Exception as e:
+                    self.logger.error(e.args[0])
                     return 500, 'ERROR READING ALL OUTPUTS'
             # else, the value is not a number
             return 400, 'INVALID GPIO: {}'.format(command[0])
@@ -142,33 +163,38 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
                 try:
                     GPIO.setup(channel, GPIO.OUT)
                     return 200, 'OK'
-                except:
+                except Exception as e:
+                    self.logger.error(e.args[0])
                     return 500, 'ERROR CONFIGURING OUTPUT {}'.format(channel)
             if method.lower() == 'disable':
                 try:
                     GPIO.output(channel, False)
                     GPIO.cleanup(channel)
                     return 200, 'OK'
-                except:
+                except Exception as e:
+                    self.logger.error(e.args[0])
                     return 500, 'ERROR DISABLING OUTPUT {}'.format(channel)
             if method.lower() == 'true':
                 try:
                     GPIO.output(channel, True)
                     return 200, 'OK'
-                except:
+                except Exception as e:
+                    self.logger.error(e.args[0])
                     return 500, 'ERROR SETTING OUTPUT {} HI'.format(channel)
             if method.lower() == 'false':
                 try:
                     GPIO.output(channel, False)
                     return 200, 'OK'
-                except:
+                except Exception as e:
+                    self.logger.error(e.args[0])
                     return 500, 'ERROR SETTING OUTPUT {} LO'.format(channel)
             if method.lower() == 'toggle':
                 try:
                     state = GPIO.input(channel)
                     GPIO.output(channel, not state)
                     return 200, 'OK'
-                except:
+                except Exception as e:
+                    self.logger.error(e.args[0])
                     return 500, 'ERROR TOGGLING OUTPUT {}'.format(channel)
             if method:
                 # unrecognized method
@@ -180,7 +206,8 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
         try:
             state = bool(GPIO.input(channel))
             return 200, state
-        except:
+        except Exception as e:
+            self.logger.error(e.args[0])
             return 500, 'ERROR READING OUTPUT {}'.format(channel)
 
     def _authenticate(self):
@@ -307,6 +334,11 @@ if __name__ == '__main__':
         # encode and store the token in a class attribute
         IORequestHandler.token = get_token(USERPASS)
 
+    # setup logging
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger('RESTberryPi')
+    IORequestHandler.logger = logger
+
     # create and run server
     httpd = http.server.HTTPServer(
         server_address=(INTERFACE, PORT),
@@ -319,20 +351,19 @@ if __name__ == '__main__':
     msg = 'Running server on {}'.format(host)
     if USERPASS or hasattr(IORequestHandler, 'token'):
         msg += ' with Basic Auth'
-    print(msg)
+    logger.info(msg)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
         # running inside terminal, catch this to shut down cleanly,
         # and feed an emtpy line just so it's pretty
         print()
-    # find and set all outputs low
+    # set any outputs low before cleaning up
     for channel in IORequestHandler.channels:
         function = GPIO.gpio_function(channel)
         if function == GPIO.OUT:
             try:
                 GPIO.output(channel, False)
-            except:
-                # we don't care, shut it down
-                pass
+            except Exception as e:
+                self.logger.debug(e.args[0])
     GPIO.cleanup()
