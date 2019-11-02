@@ -35,6 +35,7 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
         26: 37,
         27: 13,
     }
+    logger = logging.getLogger('RESTberryPi')
 
     def do_GET(self):
         """ Called when handling GET requests."""
@@ -340,17 +341,16 @@ if __name__ == '__main__':
         fmt='%(asctime)s %(levelname)-8s %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
     # log to file
-    handler = logging.FileHandler('server.log', mode='a+')
-    handler.setFormatter(formatter)
+    file_handler = logging.FileHandler('server.log', mode='a+')
+    file_handler.setFormatter(formatter)
     # log to stdout, for example when running in a terminal
     screen_handler = logging.StreamHandler(stream=sys.stdout)
     screen_handler.setFormatter(formatter)
     # create logger and add handlers
     logger = logging.getLogger('RESTberryPi')
-    logger.setLevel(logging.INFO)
-    logger.addHandler(handler)
+    logger.addHandler(file_handler)
     logger.addHandler(screen_handler)
-    IORequestHandler.logger = logger
+    logger.setLevel(logging.INFO)
 
     # create and run server
     httpd = http.server.HTTPServer(
