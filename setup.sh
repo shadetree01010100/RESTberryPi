@@ -1,11 +1,10 @@
 # create a virtual environment to run inside
 pip3 install virtualenv --user
 virtualenv -p python3 env
-source env/bin/activate
 
 
 # install requirements
-pip3 install --upgrade -r requirements.txt
+env/bin/pip3 install --upgrade -r requirements.txt
 
 
 # create systemd service
