@@ -9,7 +9,9 @@ import base64
 import http.server
 import json
 import logging
+import signal
 import sys
+import threading
 
 import RPi.GPIO as GPIO
 
@@ -301,6 +303,38 @@ if __name__ == '__main__':
         token = 'Basic {}'.format(key)
         return token
 
+    def shutdown(signum, frame):
+        logger.info('Shutting down')
+        # set any outputs low before cleaning up
+        for channel in IORequestHandler.channels:
+            function = GPIO.gpio_function(channel)
+            if function == GPIO.OUT:
+                try:
+                    GPIO.output(channel, False)
+                except Exception as e:
+                    self.logger.debug(e.args[0])
+        GPIO.cleanup()
+        httpd.shutdown()
+
+    # setup logging
+    logger = logging.getLogger('RESTberryPi')
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        fmt='%(asctime)s %(levelname)-8s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+    # log to file
+    file_handler = logging.FileHandler('server.log', mode='a+')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    # log to stdout
+    screen_handler = logging.StreamHandler(stream=sys.stdout)
+    screen_handler.setFormatter(formatter)
+    logger.addHandler(screen_handler)
+
+    # handle OS signals
+    signal.signal(signal.SIGINT, shutdown)
+    signal.signal(signal.SIGTERM, shutdown)
+
     # parse command line args
     help = 'INVALID ARGS, TRY: python3 server.py 31415 username:password'
     args = sys.argv[1:]  # first arg is this file
@@ -336,21 +370,6 @@ if __name__ == '__main__':
         # encode and store the token in a class attribute
         IORequestHandler.token = get_token(USERPASS)
 
-    # setup logging
-    logger = logging.getLogger('RESTberryPi')
-    logger.setLevel(logging.INFO)
-    formatter = logging.Formatter(
-        fmt='%(asctime)s %(levelname)-8s %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
-    # log to file
-    file_handler = logging.FileHandler('server.log', mode='a+')
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-    # log to stdout, for example when running in a terminal
-    screen_handler = logging.StreamHandler(stream=sys.stdout)
-    screen_handler.setFormatter(formatter)
-    logger.addHandler(screen_handler)
-
     # create and run server
     httpd = http.server.HTTPServer(
         server_address=(INTERFACE, PORT),
@@ -365,17 +384,10 @@ if __name__ == '__main__':
         msg += ' with Basic Auth'
     logger.info(msg)
     try:
-        httpd.serve_forever()
+        threading.Thread(target=httpd.serve_forever).start()
+        #httpd.serve_forever()
     except KeyboardInterrupt:
         # running inside terminal, catch this to shut down cleanly,
         # and feed an emtpy line just so it's pretty
         print()
-    # set any outputs low before cleaning up
-    for channel in IORequestHandler.channels:
-        function = GPIO.gpio_function(channel)
-        if function == GPIO.OUT:
-            try:
-                GPIO.output(channel, False)
-            except Exception as e:
-                self.logger.debug(e.args[0])
-    GPIO.cleanup()
+        shutdown()
