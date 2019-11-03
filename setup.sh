@@ -4,7 +4,7 @@ virtualenv -p python3 env
 
 
 # install requirements
-env/bin/pip3 install --upgrade -r requirements.txt
+env/bin/pip3 install -r requirements.txt
 
 
 # create systemd service
