@@ -121,6 +121,7 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
             return 500, 'ERROR READING INPUT {}'.format(channel)
 
     def log_message(self, _, *args):
+        # this overridden method passes logs onto our custom logger
         endpoint = args[0].split(' ')[1]
         status = int(args[1])
         if status == 200:
