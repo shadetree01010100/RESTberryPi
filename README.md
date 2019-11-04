@@ -92,7 +92,7 @@ Outputs are set low when disabled, and when the server exits.
 
 ### Resources
 
-| RESOURCE 	| METHODS                      	|
+| Resource 	| Methods                      	|
 |----------	|------------------------------	|
 | inputs   	| enable, disable              	|
 | outputs  	| enable, disable, true, false 	|
