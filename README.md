@@ -1,6 +1,6 @@
 # RESTberryPi
 
-A simple, RESTful API for Raspberry Pi GPIO pins.
+A simple, RESTful API for IO on the Raspberry Pi
 
 ---
 
@@ -29,7 +29,7 @@ sudo systemctl <restart|start|status|stop> RESTberryPi.service
 
 ## API Usage
 
-Resources are organized following the pattern `/resource/instance/method`, and are not case-sensitive. Top-level `GET` requests (`http://<host>:<port>`) return a JSON representation of 17 GPIO pins that are available for general use. For example:
+Resources are organized following the pattern `/resource/instance/method`, and are not case-sensitive. Top-level `GET` requests (`http://<host>:<port>`) return a JSON representation of the available IO, including the 17 GPIO pins that are available for general use. For example:
 
 ```
 curl raspberrypi.local:31415
