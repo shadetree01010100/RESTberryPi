@@ -1,9 +1,9 @@
 # --- SERVER CONFIGURATION ---
-INTERFACE = '0.0.0.0'  # 0.0.0.0 to serve on all available interfaces
+INTERFACE = "0.0.0.0"  # 0.0.0.0 to serve on all available interfaces
 PORT = 31415
 USERPASS = None  # "username:password" or None, overridden by sys args
 # --- END SERVER CONFIGURATION --
-VERSION = '0.1.0'
+VERSION = "0.1.0"
 
 import base64
 import http.server
@@ -373,7 +373,7 @@ if __name__ == '__main__':
 
     # create and run server
     httpd = http.server.HTTPServer(
-        server_address=(INTERFACE, PORT),
+        server_address=(INTERFACE, int(PORT)),
         RequestHandlerClass=IORequestHandler)
     GPIO.setmode(GPIO.BCM)
     if INTERFACE != '0.0.0.0':
@@ -384,9 +384,9 @@ if __name__ == '__main__':
     if USERPASS or hasattr(IORequestHandler, 'token'):
         msg += ' with Basic Auth'
     logger.info(msg)
+    thread = threading.Thread(target=httpd.serve_forever).start()
     try:
-        threading.Thread(target=httpd.serve_forever).start()
-        #httpd.serve_forever()
+        thread.join()
     except KeyboardInterrupt:
         # running inside terminal, catch this to shut down cleanly,
         # and feed an emtpy line just so it's pretty
