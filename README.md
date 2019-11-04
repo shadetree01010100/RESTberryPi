@@ -154,6 +154,7 @@ When running inside a terminal (see below) you can pass an optional value to ove
 To run in your terminal using Python3, you will first need to install the requirements. Currently the only module used that is not part of the standard library is [RPi.GPIO](https://pypi.org/project/RPi.GPIO/).
 
 ```
+cd ~
 git clone git@github.com:shadetree01010100/RESTberryPi.git
 cd RESTberryPi
 pip3 install -r requirements.txt --user
