@@ -380,7 +380,8 @@ if __name__ == '__main__':
         host = '{}:{}'.format(INTERFACE, PORT)
     else:
         host = 'port {}'.format(PORT)
-    thread = threading.Thread(target=httpd.serve_forever).start()
+    thread = threading.Thread(target=httpd.serve_forever)
+    thread.start()
     msg = 'Running server on {}'.format(host)
     if USERPASS or hasattr(IORequestHandler, 'token'):
         msg += ' with Basic Auth'
