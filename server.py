@@ -380,11 +380,11 @@ if __name__ == '__main__':
         host = '{}:{}'.format(INTERFACE, PORT)
     else:
         host = 'port {}'.format(PORT)
+    thread = threading.Thread(target=httpd.serve_forever).start()
     msg = 'Running server on {}'.format(host)
     if USERPASS or hasattr(IORequestHandler, 'token'):
         msg += ' with Basic Auth'
     logger.info(msg)
-    thread = threading.Thread(target=httpd.serve_forever).start()
     try:
         thread.join()
     except KeyboardInterrupt:
@@ -392,3 +392,4 @@ if __name__ == '__main__':
         # and feed an emtpy line just so it's pretty
         print()
         shutdown()
+    logger.info('Exit.')
