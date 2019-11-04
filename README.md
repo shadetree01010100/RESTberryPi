@@ -90,7 +90,7 @@ GET /outputs
 
 Outputs are set low when disabled, and when the server exits.
 
-#### Resources
+### Resources
 
 | RESOURCE 	| METHODS                      	|
 |----------	|------------------------------	|
