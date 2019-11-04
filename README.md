@@ -47,7 +47,7 @@ curl raspberrypi.local:31415
 
 For each GPIO, `mode` and `state` will both be `null` if the channel has not been enabled; `state` is otherwise a boolean and `mode` a string. The integer `pin` is a mapping to the physical pin number of the Pi's 40-pin GPIO header, included only for convenience.
 
-Each available channel is exposed through the `/input` and `/output` resources, and can be accessed and controlled using `GET` requests. Note that a GPIO must be enabled before it can be used, and inputs are configured with a pull-down resistor. A `true` value means the pin's voltage to ground (logic-level) is high.
+Each available channel is exposed through the `/input` and `/output` resources, and can be accessed and controlled using `GET` requests. Note that **a GPIO must be enabled before it can be used**, and inputs are configured with a pull-down resistor. A `true` value means the pin's voltage to ground (logic-level) is high.
 
 ```
 GET /inputs
