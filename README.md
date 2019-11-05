@@ -19,7 +19,7 @@ cd RESTberryPi
 sh setup.sh
 ```
 
-The installed `systemd` service will start automatically with the Pi, and can be controlled using systemd commands:
+The installed `systemd` service will start automatically with the Pi, and can be controlled from the command line:
 
 ```
 sudo systemctl <restart|start|status|stop> RESTberryPi.service
