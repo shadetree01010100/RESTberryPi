@@ -72,7 +72,7 @@ GET /inputs/3
 # 400 "INVALID GPIO 3"
 ```
 
-Outputs follow the same pattern, and in addition they can be set high or low with the `/true` and `/false` methods, respectively:
+Outputs follow the same pattern, and can be set high or low with the `/true` and `/false` methods, respectively:
 
 ```
 GET /outputs/5/enable
@@ -92,10 +92,10 @@ Outputs are set low when disabled, and when the server exits.
 
 ### Resources
 
-| Resource 	| Methods                      	|
-|----------	|------------------------------	|
-| inputs   	| enable, disable              	|
-| outputs  	| enable, disable, true, false 	|
+| Resource 	| Methods                             	|
+|----------	|-------------------------------------	|
+| inputs   	| enable, disable                     	|
+| outputs  	| enable, disable, toggle, true, false 	|
 
 Header pin mapping:
 
