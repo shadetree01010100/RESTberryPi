@@ -16,7 +16,7 @@ In your Pi's terminal (or ssh), clone this repository and run the included scrip
 cd ~
 git clone git@github.com:shadetree01010100/RESTberryPi.git
 cd RESTberryPi
-sh setup.sh
+bash setup.sh
 ```
 
 The installed `systemd` service will start automatically with the Pi, and can be controlled from the command line:

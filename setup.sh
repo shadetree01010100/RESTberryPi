@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # create a virtual environment to run inside
 pip3 install virtualenv --user
 virtualenv -p python3 env
