@@ -3,7 +3,7 @@ INTERFACE = "0.0.0.0"  # 0.0.0.0 to serve on all available interfaces
 PORT = 31415
 USERPASS = None  # "username:password" or None, overridden by sys args
 # --- END SERVER CONFIGURATION --
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 import base64
 import http.server
@@ -14,30 +14,10 @@ import sys
 import threading
 
 import RPi.GPIO as GPIO
+import util
 
 
 class IORequestHandler(http.server.BaseHTTPRequestHandler):
-
-    channels = {
-        4: 7,
-        5: 29,
-        6: 31,
-        12: 32,
-        13: 33,
-        16: 36,
-        17: 11,
-        18: 12,
-        19: 35,
-        20: 38,
-        21: 40,
-        22: 15,
-        23: 16,
-        24: 18,
-        25: 22,
-        26: 37,
-        27: 13,
-    }
-    logger = logging.getLogger('RESTberryPi')
 
     def do_GET(self):
         """ Called when handling GET requests."""
@@ -50,7 +30,7 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
             try:
                 self._send_response(200, self._get_status())
             except Exception as e:
-                self.logger.error(e.args[0])
+                self.server.logger.error(e.args[0])
                 self._send_response(500, 'ERROR GETTING GPIO STATUS')
             return
         # else, call `RESOURCE` and pass it `command`
@@ -69,7 +49,7 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
                 states = self._read_all_gpio(GPIO.IN)
                 return 200, states
             except Exception as e:
-                self.logger.error(e.args[0])
+                self.server.logger.error(e.args[0])
                 return 500, 'ERROR READING ALL INPUTS'
         # else, read a specific channel
         try:
@@ -82,11 +62,11 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
                     states = self._read_all_gpio(GPIO.IN)
                     return 200, states
                 except Exception as e:
-                    self.logger.error(e.args[0])
+                    self.server.logger.error(e.args[0])
                     return 500, 'ERROR READING ALL INPUTS'
             # else, the value is not a number
             return 400, 'INVALID GPIO {}'.format(command[0])
-        if channel not in self.channels:
+        if channel not in util.channels:
             return 400, 'INVALID GPIO {}'.format(channel)
         try:
             # parse the method, raises IndexError if not given
@@ -97,14 +77,14 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
                     GPIO.setup(channel, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
                     return 200, 'OK'
                 except Exception as e:
-                    self.logger.error(e.args[0])
+                    self.server.logger.error(e.args[0])
                     return 500, 'ERROR CONFIGURING INPUT {}'.format(channel)
             if method.lower() == 'disable':
                 try:
                     GPIO.cleanup(channel)
                     return 200, 'OK'
                 except Exception as e:
-                    self.logger.error(e.args[0])
+                    self.server.logger.error(e.args[0])
                     return 500, 'ERROR DISABLING INPUT {}'.format(channel)
             if method:
                 # unrecognized method
@@ -117,7 +97,7 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
             state = bool(GPIO.input(channel))
             return 200, state
         except Exception as e:
-            self.logger.error(e.args[0])
+            self.server.logger.error(e.args[0])
             return 500, 'ERROR READING INPUT {}'.format(channel)
 
     def log_message(self, _, *args):
@@ -126,13 +106,13 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
         status = int(args[1])
         if status == 200:
             msg = '200 {}'.format(endpoint)
-            self.logger.debug(msg)
+            self.server.logger.debug(msg)
         elif status == 500:
             msg = '500 Exception while handling {}'.format(endpoint)
-            self.logger.error(msg)
+            self.server.logger.error(msg)
         else:
             msg = '{} {}'.format(status, endpoint)
-            self.logger.warning(msg)
+            self.server.logger.warning(msg)
 
     def OUTPUTS(self, command):
         """ Called when handling the /outputs resource."""
@@ -142,7 +122,7 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
                 states = self._read_all_gpio(GPIO.OUT)
                 return 200, states
             except Exception as e:
-                self.logger.error(e.args[0])
+                self.server.logger.error(e.args[0])
                 return 500, 'ERROR READING ALL OUTPUTS'
         # else, read a specific channel
         try:
@@ -155,11 +135,11 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
                     states = self._read_all_gpio(GPIO.OUT)
                     return 200, states
                 except Exception as e:
-                    self.logger.error(e.args[0])
+                    self.server.logger.error(e.args[0])
                     return 500, 'ERROR READING ALL OUTPUTS'
             # else, the value is not a number
             return 400, 'INVALID GPIO: {}'.format(command[0])
-        if channel not in self.channels:
+        if channel not in util.channels:
             return 400, 'INVALID GPIO: {}'.format(channel)
         try:
             # parse the method, raises IndexError if not given
@@ -169,7 +149,7 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
                     GPIO.setup(channel, GPIO.OUT)
                     return 200, 'OK'
                 except Exception as e:
-                    self.logger.error(e.args[0])
+                    self.server.logger.error(e.args[0])
                     return 500, 'ERROR CONFIGURING OUTPUT {}'.format(channel)
             if method.lower() == 'disable':
                 try:
@@ -177,21 +157,21 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
                     GPIO.cleanup(channel)
                     return 200, 'OK'
                 except Exception as e:
-                    self.logger.error(e.args[0])
+                    self.server.logger.error(e.args[0])
                     return 500, 'ERROR DISABLING OUTPUT {}'.format(channel)
             if method.lower() == 'true':
                 try:
                     GPIO.output(channel, True)
                     return 200, 'OK'
                 except Exception as e:
-                    self.logger.error(e.args[0])
+                    self.server.logger.error(e.args[0])
                     return 500, 'ERROR SETTING OUTPUT {} HI'.format(channel)
             if method.lower() == 'false':
                 try:
                     GPIO.output(channel, False)
                     return 200, 'OK'
                 except Exception as e:
-                    self.logger.error(e.args[0])
+                    self.server.logger.error(e.args[0])
                     return 500, 'ERROR SETTING OUTPUT {} LO'.format(channel)
             if method.lower() == 'toggle':
                 try:
@@ -199,7 +179,7 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
                     GPIO.output(channel, not state)
                     return 200, 'OK'
                 except Exception as e:
-                    self.logger.error(e.args[0])
+                    self.server.logger.error(e.args[0])
                     return 500, 'ERROR TOGGLING OUTPUT {}'.format(channel)
             if method:
                 # unrecognized method
@@ -212,24 +192,24 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
             state = bool(GPIO.input(channel))
             return 200, state
         except Exception as e:
-            self.logger.error(e.args[0])
+            self.server.logger.error(e.args[0])
             return 500, 'ERROR READING OUTPUT {}'.format(channel)
 
     def _authenticate(self):
-        try:
-            if self.headers['Authorization'] != self.token:
-                # user:pass is not a match
-                return False
-            # else, authorized!
-            return True
-        except AttributeError:
+        if self.server.token is None:
             # no auth set
             return True
+        if self.headers['Authorization'] != self.server.token:
+            # user:pass is not a match
+            return False
+        # else, authorized!
+        return True
+
 
     def _get_status(self):
         """ Get a JSON representation of device status."""
         gpio = dict()
-        for channel in self.channels:
+        for channel, pin in util.channels.items():
             function = GPIO.gpio_function(channel)
             if function == GPIO.IN:
                 # unconfigured channels show up as inputs for some reason,
@@ -240,27 +220,27 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
                     # this channel is not configured
                     gpio[channel] = {
                         'mode': None,
-                        'pin': self.channels[channel],
+                        'pin': pin,
                         'state': None,
                     }
                     continue
                 gpio[channel] = {
                     'mode': 'input',
-                    'pin': self.channels[channel],
+                    'pin': pin,
                     'state': state,
                 }
             elif function == GPIO.OUT:
                 state = bool(GPIO.input(channel))
                 gpio[channel] = {
                     'mode': 'output',
-                    'pin': self.channels[channel],
+                    'pin': pin,
                     'state': state,
                 }
             else:
                 # this channel is configured as something else
                 gpio[channel] = {
                     'mode': None,
-                    'pin': self.channels[channel],
+                    'pin': pin,
                     'state': None,
                 }
         status ={'GPIO': gpio}
@@ -275,7 +255,7 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
 
     def _read_all_gpio(self, function):
         channels = {}
-        for channel in self.channels:
+        for channel in util.channels:
             if GPIO.gpio_function(channel) != function:
                 continue
             try:
@@ -295,102 +275,93 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(message)
 
 
-if __name__ == '__main__':
+class RESTberryPi(http.server.HTTPServer):
 
-    def get_token(key):
-        key = key.encode('utf-8')
-        key = base64.b64encode(key)
-        key = key.decode('utf-8')
-        token = 'Basic {}'.format(key)
-        return token
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs, RequestHandlerClass=IORequestHandler)
+        self._thread = None
+        self._token = None
+        # handle OS signals
+        signal.signal(signal.SIGINT, self.stop)
+        signal.signal(signal.SIGTERM, self.stop)
+        # setup logging
+        self.logger = logging.getLogger('RESTberryPi')
+        self.logger.setLevel(logging.INFO)
+        formatter = logging.Formatter(
+            fmt='%(asctime)s %(levelname)-8s %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S')
+        file_handler = logging.FileHandler('server.log', mode='a+')
+        file_handler.setFormatter(formatter)
+        self.logger.addHandler(file_handler)
+        screen_handler = logging.StreamHandler(stream=sys.stdout)
+        screen_handler.setFormatter(formatter)
+        self.logger.addHandler(screen_handler)
 
-    def shutdown(signum, frame):
+    @property
+    def token(self):
+        return self._token
+
+    @property.setter
+    def token(self, value):
+        self._token = self.encode_token(value)
+
+    def start(self):
+        # set up GPIO
+        GPIO.setmode(GPIO.BCM)
+        # setup server
+        address, port = self.server_address
+        if address != '0.0.0.0':
+            host = '{}:{}'.format(address, port)
+        else:
+            host = 'port {}'.format(port)
+        msg = 'Running server on {}'.format(host)
+        if self.token is not None:
+            msg += ' with Basic Auth'
+        self.logger.info(msg)
+        self._thread = threading.Thread(target=self.serve_forever)
+        self._thread.start()
+        # block until server terminates, and reraise any exceptions
+        try:
+            self._thread.join()
+        except KeyboardInterrupt:
+            self.stop()
+            self.logger.info('Exit.')
+
+    def stop(self, signum, frame):
         logger.info('Shutting down')
         # set any outputs low before cleaning up
-        for channel in IORequestHandler.channels:
+        for channel in util.channels:
             function = GPIO.gpio_function(channel)
             if function == GPIO.OUT:
                 try:
                     GPIO.output(channel, False)
                 except Exception as e:
+                    # ignore exceptions, but log them for debugging
                     self.logger.debug(e.args[0])
         GPIO.cleanup()
-        httpd.shutdown()
+        self.shutdown()
+        server.logger.info('Exit')
 
-    # setup logging
-    logger = logging.getLogger('RESTberryPi')
-    logger.setLevel(logging.INFO)
-    formatter = logging.Formatter(
-        fmt='%(asctime)s %(levelname)-8s %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
-    # log to file
-    file_handler = logging.FileHandler('server.log', mode='a+')
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-    # log to stdout
-    screen_handler = logging.StreamHandler(stream=sys.stdout)
-    screen_handler.setFormatter(formatter)
-    logger.addHandler(screen_handler)
+    @staticmethod
+    def encode_token(userpass):
+        if userpass is None:
+            return None
+        userpass = userpass.encode('utf-8')
+        userpass = base64.b64encode(userpass)
+        userpass = userpass.decode('utf-8')
+        token = 'Basic {}'.format(userpass)
+        return token
 
-    # handle OS signals
-    signal.signal(signal.SIGINT, shutdown)
-    signal.signal(signal.SIGTERM, shutdown)
 
-    # parse command line args
-    help = 'INVALID ARGS, TRY: python3 server.py 31415 username:password'
+if __name__ == '__main__':
     args = sys.argv[1:]  # first arg is this file
-    if not args:
-        pass
-    elif len(args) == 1:
-        # either a port (int), or key (contains ':')
-        try:
-            PORT = int(args[0])
-        except ValueError:
-            # not a number, must be the key
-            if ':' not in args[0]:
-                # not the expected user:pass either
-                print(help)
-                sys.exit()
-            # it is a key, encode and store it in a class attribute
-            IORequestHandler.token =  get_token(args[0])
-    elif len(args) == 2:
-        # both port and key passed
-        try:
-            PORT = int(args[0])
-            assert ':' in args[1]
-        except (ValueError, AssertionError):
-            print(help)
-            sys.exit()
-        # encode and store the token in a class attribute
-        IORequestHandler.token = get_token(args[0])
-    else:
-        print(help)
-        sys.exit()
-    if USERPASS and not hasattr(IORequestHandler, 'token'):
-        # Auth was set in this file, and not overridden by command line args,
-        # encode and store the token in a class attribute
-        IORequestHandler.token = get_token(USERPASS)
-
-    # create and run server
-    httpd = http.server.HTTPServer(
-        server_address=(INTERFACE, int(PORT)),
-        RequestHandlerClass=IORequestHandler)
-    GPIO.setmode(GPIO.BCM)
-    if INTERFACE != '0.0.0.0':
-        host = '{}:{}'.format(INTERFACE, PORT)
-    else:
-        host = 'port {}'.format(PORT)
-    thread = threading.Thread(target=httpd.serve_forever)
-    thread.start()
-    msg = 'Running server on {}'.format(host)
-    if USERPASS or hasattr(IORequestHandler, 'token'):
-        msg += ' with Basic Auth'
-    logger.info(msg)
     try:
-        thread.join()
-    except KeyboardInterrupt:
-        # running inside terminal, catch this to shut down cleanly,
-        # and feed an emtpy line just so it's pretty
-        print()
-        shutdown()
-    logger.info('Exit.')
+        port, auth = util.parse_sys_args(args)
+    except Exception as e:
+        sys.exit(e.args[0])
+    # use values set at top of file if not overridden
+    port = port or PORT
+    auth = auth or USERPASS
+    RESTberryPi.token = auth
+    server = RESTberryPi(server_address=(INTERFACE, port))
+    server.start()
