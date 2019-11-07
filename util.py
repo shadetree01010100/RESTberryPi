@@ -22,27 +22,22 @@ def parse_sys_args(args):
     help = 'INVALID ARGS, TRY: python3 server.py 31415 username:password'
     if not args:
         return None, None
-    elif len(args) == 1:
+    if len(args) == 1:
         # either a port (int), or key (contains ':')
         try:
-            port = int(args[0])
-            auth = None
+            return int(args[0]), None
         except ValueError:
             # not a number, must be the key
-            port = None
-            auth = args[0]
-            if ':' not in auth:
+            if ':' not in args[0]:
                 # not the expected user:pass either
                 raise Exception(help)
-    elif len(args) == 2:
+            return None, args[0]
+    if len(args) == 2:
         # both port and key passed
         try:
-            port = int(args[0])
-            auth = args[1]
-            assert ':' in auth
-        except (ValueError, AssertionError):
+            assert ':' in args[1]
+            return int(args[0]), args[1]
+        except (AssertionError, ValueError):
             raise Exception(help)
-    else:
-        # too many args!
-        raise Exception(help)
-    return port, auth
+    # else, too many args!
+    raise Exception(help)
