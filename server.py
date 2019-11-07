@@ -278,7 +278,8 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
 class RESTberryPi(http.server.HTTPServer):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, RequestHandlerClass=IORequestHandler)
+        kwargs['RequestHandlerClass'] = IORequestHandler
+        super().__init__(*args, **kwargs)
         self._thread = None
         self._token = None
         # handle OS signals
