@@ -301,7 +301,7 @@ class RESTberryPi(http.server.HTTPServer):
     def token(self):
         return self._token
 
-    @property.setter
+    @token.setter
     def token(self, value):
         self._token = self.encode_token(value)
 
@@ -328,7 +328,7 @@ class RESTberryPi(http.server.HTTPServer):
             self.logger.info('Exit.')
 
     def stop(self, signum, frame):
-        logger.info('Shutting down')
+        self.logger.info('Shutting down')
         # set any outputs low before cleaning up
         for channel in util.channels:
             function = GPIO.gpio_function(channel)
@@ -340,7 +340,7 @@ class RESTberryPi(http.server.HTTPServer):
                     self.logger.debug(e.args[0])
         GPIO.cleanup()
         self.shutdown()
-        server.logger.info('Exit')
+        self.logger.info('Exit')
 
     @staticmethod
     def encode_token(userpass):
