@@ -362,6 +362,6 @@ if __name__ == '__main__':
     # use values set at top of file if not overridden
     port = port or PORT
     auth = auth or USERPASS
-    RESTberryPi.token = auth
     server = RESTberryPi(server_address=(INTERFACE, port))
+    server.token = auth
     server.start()
