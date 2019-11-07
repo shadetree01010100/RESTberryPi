@@ -13,7 +13,11 @@ import signal
 import sys
 import threading
 
-import RPi.GPIO as GPIO
+try:
+    import RPi.GPIO as GPIO
+except ImportError:
+    from unittest.mock import Mock
+    GPIO = Mock()
 import util
 
 
@@ -326,7 +330,7 @@ class RESTberryPi(http.server.HTTPServer):
             self._thread.join()
         except KeyboardInterrupt:
             self.stop()
-            self.logger.info('Exit.')
+        self.logger.info('Exit.')
 
     def stop(self, signum, frame):
         self.logger.info('Shutting down')
@@ -341,7 +345,6 @@ class RESTberryPi(http.server.HTTPServer):
                     self.logger.debug(e.args[0])
         GPIO.cleanup()
         self.shutdown()
-        self.logger.info('Exit')
 
     @staticmethod
     def encode_token(userpass):
