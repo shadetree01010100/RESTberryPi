@@ -104,18 +104,25 @@ class IORequestHandler(http.server.BaseHTTPRequestHandler):
             self.server.logger.error(e.args[0])
             return 500, 'ERROR READING INPUT {}'.format(channel)
 
-    def log_message(self, _, *args):
+    def log_message(self, format, *args):
         # this overridden method passes logs onto our custom logger
-        endpoint = args[0].split(' ')[1]
-        status = int(args[1])
+        # there must be a better way to get the status code,
+        # this is just goofy
+        try:
+            endpoint = args[0].split(' ')[1]
+            status = int(args[1])
+        except:
+            self.server.logger.warning(format % args)
+            return
+        method = self.command
         if status == 200:
-            msg = '200 {}'.format(endpoint)
+            msg = '200 {} {}'.format(method, endpoint)
             self.server.logger.debug(msg)
         elif status == 500:
-            msg = '500 Exception while handling {}'.format(endpoint)
+            msg = '500 Exception while handling {} {}'.format(method, endpoint)
             self.server.logger.error(msg)
         else:
-            msg = '{} {}'.format(status, endpoint)
+            msg = '{} {} {}'.format(status, method, endpoint)
             self.server.logger.warning(msg)
 
     def OUTPUTS(self, command):
@@ -368,4 +375,5 @@ if __name__ == '__main__':
     auth = auth or USERPASS
     server = RESTberryPi(server_address=(INTERFACE, port))
     server.token = auth
+    server.logger.setLevel(logging.DEBUG)
     server.start()
