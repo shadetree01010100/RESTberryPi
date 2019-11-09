@@ -13,11 +13,7 @@ import signal
 import sys
 import threading
 
-try:
-    import RPi.GPIO as GPIO
-except ImportError:
-    from unittest.mock import Mock
-    GPIO = Mock()
+import RPi.GPIO as GPIO
 import util
 
 
