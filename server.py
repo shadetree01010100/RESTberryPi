@@ -371,5 +371,5 @@ if __name__ == '__main__':
     auth = auth or USERPASS
     server = RESTberryPi(server_address=(INTERFACE, port))
     server.token = auth
-    server.logger.setLevel(logging.DEBUG)
+    server.logger.setLevel(logging.INFO)
     server.start()
