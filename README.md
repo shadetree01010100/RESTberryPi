@@ -191,7 +191,6 @@ python3 server.py 31415 username:password
 
 - Save state to disk, and load it when started
 - Include metadata (version) in response
-- Move script contents into a more competent structure
 - Implement other HTTP methods, for example `DELETE /inputs/4` should be synonymous with `GET /inputs/4/disable`
 - Webhooks for asynchronous IO?
 - Add `/serial`, etc. resources?
